@@ -1,0 +1,16 @@
+{
+  "name": "claude-account-manager",
+  "owner": {
+    "name": "Hieu Le"
+  },
+  "metadata": {
+    "description": "Plugin quản lý nhiều account Claude Code: lưu, xem usage, đổi account nhanh."
+  },
+  "plugins": [
+    {
+      "name": "acct",
+      "source": "./",
+      "description": "Quản lý nhiều account Claude: /acct:login, /acct:list, /acct:switch, /acct:logout"
+    }
+  ]
+}
