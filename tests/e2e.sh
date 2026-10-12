@@ -32,3 +32,25 @@ for BACKEND in keychain file; do
  unset CLAUDE_ACCT_BACKEND
 done
 echo "== keychain item test còn sót: $(security dump-keychain 2>/dev/null | grep -c claude-acct-TEST)"
+
+echo "=========== login mới (file backend, không mở Terminal)"
+export CLAUDE_ACCT_BACKEND=file CLAUDE_ACCT_NO_TERMINAL=1
+rm -rf "$S/store" "$S/cfg"; mkdir -p "$S/cfg"
+login A tokA1; run save a
+run login c c@x.com
+H="$S/store/login-c/login.sh"; [ -f "$H" ] && echo "helper OK:" && grep -E 'auth|import-login' "$H" | sed 's#/[^ ]*/##g'
+# giả lập claude auth login ghi vào thư mục tạm
+CLAUDE_CONFIG_DIR_SAVE="$S/cfg"; mkdir -p "$S/store/login-c"
+( cd "$S/store/login-c" && python3 -I - "$S/store/login-c" C tokC1 <<'EOF'
+import json,sys,time
+d,who,tok=sys.argv[1:]
+json.dump({"claudeAiOauth":{"accessToken":tok,"refreshToken":"r","expiresAt":1,"subscriptionType":"pro"}},open(d+"/.credentials.json","w"))
+json.dump({"oauthAccount":{"accountUuid":"u-"+who,"organizationUuid":"o1","emailAddress":who+"@x.com","organizationName":"Org"}},open(d+"/.claude.json","w"))
+EOF
+)
+run import-login "$S/store/login-c" c; [ -d "$S/store/login-c" ] && echo "TMP CÒN SÓT" || echo "tmp đã dọn"; live
+# đăng nhập lại c (cùng account) -> cập nhật; đăng nhập tên a nhưng account C -> lỗi
+for NAME in c a; do mkdir -p "$S/store/login-$NAME"; cp "$S/store/secrets/c.json" "$S/store/login-$NAME/.credentials.json"
+ python3 -I -c "import json;json.dump({'oauthAccount':{'accountUuid':'u-C','organizationUuid':'o1','emailAddress':'C@x.com'}},open('$S/store/login-$NAME/.claude.json','w'))"
+ run import-login "$S/store/login-$NAME" $NAME; done
+run list

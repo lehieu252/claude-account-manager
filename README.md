@@ -4,7 +4,8 @@ Plugin Claude Code để quản lý nhiều account Claude (đăng nhập claude
 
 | Lệnh | Việc làm |
 |---|---|
-| `/acct:login <tên>` | Lưu account **đang đăng nhập** vào danh sách với tên `<tên>` |
+| `/acct:login <tên> [email]` | Đăng nhập một account bất kỳ (mới hoặc đăng nhập lại) và lưu với tên `<tên>`. Mở cửa sổ Terminal để hoàn tất đăng nhập; **account đang dùng không bị đổi** |
+| `/acct:save <tên>` | Lưu account **đang đăng nhập** vào danh sách, không cần đăng nhập lại |
 | `/acct:list [--refresh]` | Bảng các account đã lưu: email, tổ chức, gói, usage 5h / 7 ngày, giờ reset. `▶` = account đang dùng |
 | `/acct:switch <tên>` | Đổi sang account `<tên>` |
 | `/acct:logout <tên>` | Xoá account `<tên>` khỏi danh sách (xoá token đã lưu) |
@@ -22,19 +23,19 @@ Cần Python 3.8+ (`python3`, `python` hoặc `py -3`). Trên Windows, Claude Co
 
 ## Dùng lần đầu
 
-Mỗi account làm **một lần**:
-
-1. `/login` (lệnh có sẵn của Claude Code), đăng nhập account thứ nhất.
-2. `/acct:login work`
-3. `/login` lại, đăng nhập account thứ hai.
-4. `/acct:login personal`
+1. `/acct:save work`: lưu account đang dùng.
+2. `/acct:login personal ban@example.com`: Terminal mở ra, trình duyệt mở trang đăng nhập. Đăng nhập đúng account, nếu trang hiện mã thì dán mã vào Terminal.
+3. `/acct:list`: xem cả hai account và usage.
 
 Từ đó trở đi chỉ cần `/acct:switch work` hoặc `/acct:switch personal`, rồi **mở tab / phiên Claude mới**. Tab đang mở vẫn giữ account cũ đến khi đóng.
+
+Token của account đã lưu hết hạn (lâu không dùng)? Gõ lại `/acct:login <tên>` để đăng nhập lại.
 
 ## Cách hoạt động
 
 - Claude Code giữ đăng nhập ở **Keychain** (macOS, mục `Claude Code-credentials`) hoặc file `~/.claude/.credentials.json` (Windows / Linux). Email / tổ chức của account nằm ở `~/.claude.json`, khoá `oauthAccount`.
-- `login` sao chép token đang dùng vào kho riêng: Keychain mục `claude-acct` (macOS) hoặc `~/.claude-acct/secrets/<tên>.json`, quyền 600 (Windows / Linux). Danh sách + usage cache ở `~/.claude-acct/accounts.json` (không chứa token).
+- `login` chạy `claude auth login` với `CLAUDE_CONFIG_DIR` trỏ vào thư mục tạm, nên đăng nhập đang dùng không bị đụng tới; xong thì chuyển token vào kho và xoá thư mục tạm. Trên macOS, đăng nhập đang dùng được sao lưu trước và tự khôi phục nếu Keychain không tách theo thư mục.
+- `save` sao chép token đang dùng vào kho riêng: Keychain mục `claude-acct` (macOS) hoặc `~/.claude-acct/secrets/<tên>.json`, quyền 600 (Windows / Linux). Danh sách + usage cache ở `~/.claude-acct/accounts.json` (không chứa token).
 - `switch` lưu lại token **mới nhất** của account hiện tại (Claude Code tự làm mới token theo thời gian) rồi ghi token + `oauthAccount` của account đích vào chỗ Claude Code đọc.
 - `switch` từ chối nếu account đang đăng nhập chưa được lưu, để không làm mất đăng nhập đó (`--force` để bỏ qua).
 - Token **không bao giờ** được in ra hội thoại; lệnh chạy script trực tiếp (`disable-model-invocation`), Claude chỉ hiển thị kết quả.
@@ -43,7 +44,7 @@ Từ đó trở đi chỉ cần `/acct:switch work` hoặc `/acct:switch persona
 
 - **Usage dùng API không chính thức** (`api.anthropic.com/api/oauth/usage`, cùng nguồn với `/usage`). Anthropic có thể đổi bất cứ lúc nào. Kết quả được cache 2 phút để tránh lỗi 429.
 - Account không dùng lâu sẽ có token hết hạn. Khi đó `list` hiện **số cũ kèm giờ cập nhật**; script không tự làm mới token để tránh làm hỏng phiên đăng nhập. Switch sang account đó một lần là có số mới.
-- `/acct:login` không tự đăng nhập hộ: bước đăng nhập claude.ai cần trình duyệt, nên vẫn dùng `/login` có sẵn.
+- Đăng nhập claude.ai có thể yêu cầu dán mã, mà ô chat không nhận nhập liệu, nên `/acct:login` mở một cửa sổ terminal riêng (macOS: Terminal; Windows: cửa sổ Git Bash; Linux: terminal mặc định). Không mở được thì lệnh in ra câu lệnh để bạn tự chạy.
 - Không hỗ trợ đăng nhập bằng API key, Bedrock, Vertex.
 - Nếu bạn đặt `CLAUDE_CONFIG_DIR` trên macOS, tên mục Keychain có hậu tố theo đường dẫn; script tính theo quan sát cộng đồng, chưa có tài liệu chính thức.
 - Dùng nhiều account subscription phải tuân theo điều khoản của Anthropic.
