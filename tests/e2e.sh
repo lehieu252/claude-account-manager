@@ -54,3 +54,19 @@ for NAME in c a; do mkdir -p "$S/store/login-$NAME"; cp "$S/store/secrets/c.json
  python3 -I -c "import json;json.dump({'oauthAccount':{'accountUuid':'u-C','organizationUuid':'o1','emailAddress':'C@x.com'}},open('$S/store/login-$NAME/.claude.json','w'))"
  run import-login "$S/store/login-$NAME" $NAME; done
 run list
+
+echo "=========== login chỉ bằng email + tìm theo email/phần trước @"
+fake(){ mkdir -p "$1"; python3 -I -c "import json;json.dump({'claudeAiOauth':{'accessToken':'t-$2','refreshToken':'r','expiresAt':1}},open('$1/.credentials.json','w'));json.dump({'oauthAccount':{'accountUuid':'u-$2','organizationUuid':'o','emailAddress':'$2'}},open('$1/.claude.json','w'))"; }
+run login hieunx@xtgroup.vn
+grep -o "'--email' '[^']*'\|import-login .*" "$S/store/login-hieunx@xtgroup.vn/login.sh" | sed "s#'/[^']*'#<path>#g"
+fake "$S/store/login-hieunx@xtgroup.vn" khac@xtgroup.vn
+run import-login "$S/store/login-hieunx@xtgroup.vn" hieunx@xtgroup.vn hieunx@xtgroup.vn   # nhầm account -> lỗi
+fake "$S/store/login-hieunx@xtgroup.vn" HieuNX@xtgroup.vn
+run import-login "$S/store/login-hieunx@xtgroup.vn" hieunx@xtgroup.vn hieunx@xtgroup.vn   # đúng (khác hoa thường)
+run login hieunx; grep -o "'--email' '[^']*'" "$S/store/login-hieunx@xtgroup.vn/login.sh"   # đăng nhập lại theo phần trước @
+fake "$S/x2" hieunx@other.com; run import-login "$S/x2" hieunx@other.com hieunx@other.com
+run switch hieunx              # nhập nhằng
+run switch hieunx@xtgroup.vn
+run switch HIEUNX@OTHER.COM
+run remove hieunx@other.com
+run switch hieunx; run list
